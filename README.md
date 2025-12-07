@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 # HireMatch Blueprint
 
 Scaffolded monorepo for HireMatch using FastAPI (Python) for the API and React + Vite for the frontend.
@@ -15,52 +16,93 @@ Local setup (recommended)
 
    - Create and activate a virtual environment:
 
-     ```powershell
-     Set-Location 'F:\hr\api'
-     python -m venv .venv
-     .\.venv\Scripts\Activate.ps1
-     ```
+# HireMatch — HR CV–JD Match Assistant
 
-   - Install dependencies and run the API:
+React/Vite frontend + FastAPI backend + Supabase (Auth/Postgres/Storage) + Gemini AI for JD improvement and CV–JD matching.
 
-     ```powershell
-     pip install -r requirements.txt
-     uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
-     ```
+Overview
+- `web/` — React + Vite frontend with public landing, auth, and role dashboards.
+- `api/` — FastAPI backend with role-based routers and Gemini integration. DB schema & seed are in `api/db/`.
 
-   - Database schema and seed (if using Supabase or Postgres locally):
+Docs & diagram
+- Documentation files: `ProblemStatement.md`, `UseCases.md`, `TestPlan.md`, `AI-log.md`, `ReleaseRoadmap.md`, `UI-Sketch-and-Vision.md`.
+- Diagram: `uml.png`.
 
-     ```powershell
-     psql "$SUPABASE_DB_URL" -f api/db/schema.sql
-     psql "$SUPABASE_DB_URL" -f api/db/seed.sql
-     ```
+Prerequisites
+- Node 18+ and npm
+- Python 3.11+ (Windows: `py` launcher available)
+- Supabase project (URL, anon key, service key). Optional: JWT secret.
+- Gemini API key (for AI features)
 
-   - Environment variables: copy or create `api/.env` (not committed). The project expects Supabase keys and any other secrets referenced in `api/config.py`.
+Local setup
 
-2) Frontend
+1) Frontend (web)
 
-   - From the repo root:
+   ```powershell
+   Set-Location 'F:\hr\web'
+   npm install
+   npm run dev            # defaults to http://localhost:5173
+   # Production build
+   npm run build
+   ```
 
-     ```powershell
-     Set-Location 'F:\hr\web'
-     npm install
-     npm run dev
-     ```
+   Env: set `VITE_API_URL` (FastAPI base), `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` in `.env` or your shell. The code defaults to `http://127.0.0.1:8000` for local API.
 
-   - The dev server runs on a Vite port (typically `5173`). Update API URLs in `web/src/lib/api.ts` if needed.
+2) Backend (api)
+
+   ```powershell
+   Set-Location 'F:\hr\api'
+   python -m venv .venv
+   .\.venv\Scripts\Activate.ps1
+   pip install -r requirements.txt
+   copy .env.example .env  # fill with your secrets
+   uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+   ```
+
+   Required `.env` keys: `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `SUPABASE_ANON_KEY`, `GEMINI_API_KEY`. Optional: `SUPABASE_JWT_SECRET`, `APP_ENV=local` for relaxed checks.
+
+Database schema & seed
+- SQL scripts: `api/db/schema.sql` and `api/db/seed.sql`. Apply to your Supabase project or Postgres instance:
+
+  ```powershell
+  psql "$SUPABASE_DB_URL" -f api/db/schema.sql
+  psql "$SUPABASE_DB_URL" -f api/db/seed.sql
+  ```
+
+Example API calls
+- List jobs (public):
+
+  ```bash
+  curl http://127.0.0.1:8000/jobs
+  ```
+
+- Candidate match check (requires Supabase auth token):
+
+  ```bash
+  curl -X POST http://127.0.0.1:8000/candidate/match-check \
+    -H "Authorization: Bearer <supabase_jwt>" \
+    -H "Content-Type: application/json" \
+    -d '{"jd_text":"React frontend role...", "cv_id":null}'
+  ```
 
 Notes
-- The `api/requirements.txt` lists Python deps. Use the virtual environment to avoid committing site-packages.
-- `api/.venv/` and `web/node_modules/` are now ignored by `.gitignore`; if you previously pushed large directories and want to remove them from git history, I can help (this requires rewriting history and force-push).
-- If you deploy, provide production environment variables securely (CI secrets / environment settings).
+- The `api/requirements.txt` lists Python dependencies. Use a virtual environment to avoid committing site-packages.
+- `.gitignore` excludes `api/.venv/` and `web/node_modules/` to keep the repository small.
+- If you previously pushed dependency folders and want to remove them from git history to reduce remote size, I can help (this rewrites history and requires a force-push).
+- For production, store secrets in CI or environment settings — do not commit them.
 
-Repository files of interest
+Files of interest
 - `api/db/schema.sql` — DB schema
 - `api/db/seed.sql` — initial seed data
 - `api/app/main.py` — FastAPI app entrypoint
 - `web/src` — frontend source code
 
-Need help next?
-- I can add an `MIT` `LICENSE` now and push it, and optionally enhance this README with more details (examples of env variables). I can also rewrite history to purge large files if you want — say `A` (add MIT + README improvements) or `B` (purge history) or `C` (both).
+Tests & notes
+- Example checks performed locally (2025-12-08): `npm run build` (web) and `py -m compileall app` (api) — both can be run locally; functional tests require Supabase + Gemini credentials as described in `TestPlan.md`.
+- Local dev can bypass strict role checks with `disable_role_checks_local=True` in settings.
+- CV uploads are stored in a Supabase storage bucket named `cvs` (created on-demand in local dev).
+
+Next steps
+- I can add/update an `MIT` `LICENSE` (or another license you prefer) and improve README examples of env variables. I can also purge large files from history if you want — this is optional and destructive to history (requires force-push).
 
 ---
