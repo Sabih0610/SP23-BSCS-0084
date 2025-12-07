@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings
-from .routers import admin, candidate, public, recruiter
+from .routers import admin, candidate, public, recruiter, notifications
 
 
 def create_app() -> FastAPI:
@@ -25,6 +25,7 @@ def create_app() -> FastAPI:
     app.include_router(candidate.router)
     app.include_router(recruiter.router)
     app.include_router(admin.router)
+    app.include_router(notifications.router)
     return app
 
 

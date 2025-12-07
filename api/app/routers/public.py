@@ -5,8 +5,10 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from supabase import Client
 
-from ..dependencies import get_supabase_service_client
+from ..dependencies import get_supabase_service_client, get_current_user
 from ..schemas import JobPublic
+from ..config import get_settings
+from ..schemas import AuthUser
 
 router = APIRouter(tags=["public"])
 
@@ -39,6 +41,17 @@ def _map_job_public(j: dict) -> JobPublic:
 async def health() -> dict:
     return {"status": "ok", "timestamp": datetime.utcnow().isoformat()}
 
+
+@router.get("/debug/me")
+async def debug_me(
+    user: AuthUser = Depends(get_current_user),
+    settings=Depends(get_settings),
+):
+    """
+    Lightweight debug endpoint to inspect the authenticated user when testing locally.
+    Do not expose in production.
+    """
+    return {"user_id": user.user_id, "role": user.role, "app_env": settings.app_env}
 
 @router.get("/jobs", response_model=List[JobPublic])
 async def list_jobs(client: Client = Depends(get_supabase_service_client)):

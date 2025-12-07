@@ -42,11 +42,28 @@ def get_supabase_service_client(settings: Settings = Depends(get_settings)) -> C
 
 def _decode_supabase_jwt(token: str, settings: Settings) -> dict:
     global _jwk_client
+    # If a JWT secret is provided (HS256), try that first to avoid network hiccups on jwks fetch.
+    if settings.supabase_jwt_secret:
+        try:
+            return jwt.decode(
+                token,
+                settings.supabase_jwt_secret,
+                algorithms=["HS256"],
+                audience="authenticated",
+            )
+        except jwt.PyJWTError:
+            pass
     try:
         if _jwk_client is None:
             _jwk_client = jwt.PyJWKClient(f"{settings.supabase_url}/auth/v1/keys")
         signing_key = _jwk_client.get_signing_key_from_jwt(token).key
-        return jwt.decode(token, signing_key, algorithms=["RS256"], audience="authenticated")
+        # Supabase can use RS256 (legacy), ES256 (new P-256), or HS256 (legacy shared secret)
+        return jwt.decode(
+            token,
+            signing_key,
+            algorithms=["RS256", "ES256", "HS256"],
+            audience="authenticated",
+        )
     except jwt.PyJWTError as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
@@ -75,10 +92,16 @@ async def get_current_user(
     x_debug_role: Optional[str] = Header(None),
     settings: Settings = Depends(get_settings),
 ) -> AuthUser:
+    # In local mode, allow forcing a role via header and skip JWT entirely.
+    if settings.app_env.lower() == "local" and x_debug_role:
+        role = str(x_debug_role)
+        _ensure_user_records(LOCAL_DEV_USER_ID, role, settings)
+        return AuthUser(user_id=LOCAL_DEV_USER_ID, role=role, token=None)
+
     # Local/dev bypass: allow setting a role without JWT to speed up development
     if (not authorization or not authorization.lower().startswith("bearer ")) and settings.app_env.lower() == "local":
-        # Default to candidate so local UI can access candidate routes without tokens; override via X-Debug-Role.
-        role = x_debug_role or "candidate"
+        # Default to recruiter in local/dev to unblock recruiter flows; override via X-Debug-Role.
+        role = x_debug_role or "recruiter"
         _ensure_user_records(LOCAL_DEV_USER_ID, str(role), settings)
         return AuthUser(user_id=LOCAL_DEV_USER_ID, role=str(role), token=None)
 
@@ -104,8 +127,21 @@ async def get_current_user(
             return AuthUser(user_id=LOCAL_DEV_USER_ID, role=str(role), token=None)
         raise
 
-    role = claims.get("role") or claims.get("app_metadata", {}).get("role")
+    # Roles can come from multiple places depending on Supabase JWT config
+    role = (
+        claims.get("role")
+        or claims.get("app_metadata", {}).get("role")
+        or claims.get("user_metadata", {}).get("role")
+    )
     user_id = claims.get("sub") or claims.get("user_id")
+
+    # In local dev, tolerate Supabase tokens that are missing or using the generic "authenticated" role
+    # by honoring X-Debug-Role or defaulting to recruiter to keep dashboards usable.
+    if settings.app_env.lower() == "local":
+        if x_debug_role:
+            role = str(x_debug_role)
+        if not role or role == "authenticated":
+            role = "recruiter"
 
     if role == "authenticated":
         role = "candidate"
@@ -139,7 +175,13 @@ def get_supabase_user_client(
 
 
 def require_role(*allowed: Literal["admin", "recruiter", "candidate", "authenticated"]):
-    async def checker(user: AuthUser = Depends(get_current_user)) -> AuthUser:
+    async def checker(
+        user: AuthUser = Depends(get_current_user),
+        settings: Settings = Depends(get_settings),
+    ) -> AuthUser:
+        # In local/dev, allow optional bypass to keep flows unblocked.
+        if settings.app_env.lower() == "local" and settings.disable_role_checks_local:
+            return user
         if user.role not in allowed:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,

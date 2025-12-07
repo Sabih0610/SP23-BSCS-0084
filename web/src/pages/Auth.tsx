@@ -44,10 +44,10 @@ export function LoginPage() {
 export function SignupPage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
-  const role = params.get("role") ?? "candidate";
+  const roleParam = params.get("role");
+  const role: "recruiter" | "candidate" = roleParam === "recruiter" ? "recruiter" : "candidate";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [selectedRole, setSelectedRole] = useState(role);
   const [message, setMessage] = useState<string | null>(null);
 
   const onSignup = async () => {
@@ -56,14 +56,14 @@ export function SignupPage() {
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { role: selectedRole } },
+      options: { data: { role } },
     });
     if (error) {
       setMessage(error.message);
     } else {
       setMessage("Check your email to confirm your account.");
       // Navigate to the relevant dashboard after signup; in real app wait for email verification.
-      if (selectedRole === "recruiter") navigate("/recruiter/dashboard");
+      if (role === "recruiter") navigate("/recruiter/dashboard");
       else navigate("/candidate/dashboard");
     }
   };
@@ -72,12 +72,13 @@ export function SignupPage() {
     <div className="app-shell">
       <div className="card">
         <h1>Create your account</h1>
-        <p>Role selected: <strong>{selectedRole}</strong>. You can change it anytime.</p>
+        <p>
+          You are signing up as <strong>{role === "recruiter" ? "Recruiter / HR" : "Candidate"}</strong>.
+        </p>
+        <p style={{ fontSize: 13, color: "#666" }}>
+          This role is stored with your account and controls your dashboard & permissions.
+        </p>
         <form className="grid" style={{ maxWidth: 360 }}>
-          <select value={selectedRole} onChange={(e) => setSelectedRole(e.target.value)} style={inputStyle}>
-            <option value="recruiter">Recruiter / HR</option>
-            <option value="candidate">Candidate</option>
-          </select>
           <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="Work email" style={inputStyle} />
           <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" placeholder="Password" style={inputStyle} />
           <button className="button" type="button" onClick={onSignup}>

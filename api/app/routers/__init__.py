@@ -1,1 +1,1 @@
-from . import admin, candidate, public, recruiter  # noqa: F401
+from . import admin, candidate, public, recruiter, notifications  # noqa: F401

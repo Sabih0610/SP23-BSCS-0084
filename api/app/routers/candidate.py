@@ -22,6 +22,7 @@ from ..schemas import (
 )
 from ..services.matching import MatchingService, build_candidate_payload
 from ..config import get_settings
+from ..config import Settings
 
 router = APIRouter(prefix="/candidate", tags=["candidate"], dependencies=[Depends(require_role("candidate"))])
 
@@ -266,8 +267,42 @@ async def apply_to_job(
     body: Dict[str, Any] = Body(default_factory=dict),
     user: AuthUser = Depends(require_role("candidate")),
     client: Client = Depends(get_supabase_user_client),
+    settings: Settings = Depends(get_settings),
 ):
     cv_id = body.get("cv_id")
+    cv_file_url = None
+    cv_excerpt = None
+
+    # If no cv_id provided, pick the latest CV for the candidate (if any)
+    try:
+        if cv_id:
+            cv_res = (
+                client.table("candidate_cvs")
+                .select("id,file_url,parsed_text")
+                .eq("id", cv_id)
+                .eq("candidate_id", user.user_id)
+                .limit(1)
+                .execute()
+            )
+        else:
+            cv_res = (
+                client.table("candidate_cvs")
+                .select("id,file_url,parsed_text")
+                .eq("candidate_id", user.user_id)
+                .order("created_at", desc=True)
+                .limit(1)
+                .execute()
+            )
+        if cv_res.data:
+            cv_row = cv_res.data[0]
+            cv_id = cv_row.get("id") or cv_id
+            cv_file_url = cv_row.get("file_url")
+            parsed_text = cv_row.get("parsed_text") or ""
+            cv_excerpt = (parsed_text or "")[:800] if parsed_text else None
+    except Exception:
+        # Don't block application creation if CV lookup fails
+        pass
+
     try:
         res = client.table("applications").insert(
             {
@@ -276,11 +311,44 @@ async def apply_to_job(
                 "status": "applied",
                 "applied_at": datetime.utcnow().isoformat(),
                 "cv_id": cv_id,
+                "cv_file_url": cv_file_url,
+                "cv_excerpt": cv_excerpt,
             }
         ).execute()
-        return res.data
+        app_row = res.data[0] if res.data else None
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc))
+
+    # Notify recruiter if job has a recruiter_id
+    try:
+        svc = supabase_service_client(settings)
+        job_res = (
+            svc.table("jobs")
+            .select("id,title,recruiter_id")
+            .eq("id", job_id)
+            .limit(1)
+            .execute()
+        )
+        job = job_res.data[0] if job_res.data else None
+        recruiter_id = job.get("recruiter_id") if job else None
+        if recruiter_id:
+            svc.table("notifications").insert(
+                {
+                    "user_id": recruiter_id,
+                    "type": "new_application",
+                    "data": {
+                        "job_id": job_id,
+                        "job_title": job.get("title"),
+                        "candidate_id": user.user_id,
+                        "application_id": app_row.get("id") if app_row else None,
+                    },
+                }
+            ).execute()
+    except Exception:
+        # Notification failures should not block apply flow
+        pass
+
+    return app_row or res.data
 
 
 @router.post("/posts")

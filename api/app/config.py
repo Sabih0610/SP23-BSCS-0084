@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     supabase_url: str
     supabase_service_key: str
     supabase_anon_key: str
+    supabase_jwt_secret: str | None = None
+    disable_role_checks_local: bool = True
 
     gemini_api_key: str
 

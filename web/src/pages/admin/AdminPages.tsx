@@ -13,7 +13,7 @@ export function AdminDashboard() {
   return (
     <DashboardLayout
       role="admin"
-      title="Admin Dashboard"
+      title="Admin Dashboard" 
       subtitle="Monitor usage, active users, jobs, matches, and moderation."
       nav={adminNav}
       kpis={[

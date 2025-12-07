@@ -165,7 +165,15 @@ async def _score_application_record(
         "rationale": result.get("rationale", ""),
         "last_scored_at": datetime.utcnow().isoformat(),
     }
-    client.table("applications").update(update_fields).eq("id", application["id"]).execute()
+    try:
+        client.table("applications").update(update_fields).eq("id", application["id"]).execute()
+    except APIError as exc:
+        # If the column is missing in schema cache (PGRST204), retry without the optional field.
+        if "last_scored_at" in str(exc) or "PGRST204" in str(exc):
+            update_fields.pop("last_scored_at", None)
+            client.table("applications").update(update_fields).eq("id", application["id"]).execute()
+        else:
+            raise
     client.table("matches").insert(
         {
             "job_id": job["id"],

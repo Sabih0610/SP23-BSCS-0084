@@ -91,6 +91,8 @@ create table if not exists public.applications (
   job_id uuid references public.jobs(id),
   candidate_id uuid references public.users(id),
   cv_id uuid references public.candidate_cvs(id),
+  cv_file_url text,
+  cv_excerpt text,
   status text default 'applied',
   applied_at timestamptz default now(),
   match_score numeric,
@@ -101,6 +103,9 @@ create table if not exists public.applications (
   best_fit boolean default false,
   last_scored_at timestamptz
 );
+
+create index if not exists idx_applications_job_id on public.applications(job_id);
+create index if not exists idx_applications_candidate_id on public.applications(candidate_id);
 
 -- Log each scoring run for auditing and history
 create table if not exists public.matches (
@@ -200,3 +205,16 @@ alter table public.jobs enable row level security;
 create policy if not exists "jobs public read" on public.jobs for select using (true);
 create policy if not exists "jobs recruiter insert" on public.jobs for insert with check (auth.uid() = recruiter_id);
 create policy if not exists "jobs recruiter update" on public.jobs for update using (auth.uid() = recruiter_id);
+
+-- Simple notifications table for recruiters/admins
+create table if not exists public.notifications (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid references public.users(id),
+  type text not null,
+  data jsonb,
+  read boolean default false,
+  created_at timestamptz default now()
+);
+
+create index if not exists idx_notifications_user_id on public.notifications(user_id);
+create index if not exists idx_notifications_created_at on public.notifications(created_at);

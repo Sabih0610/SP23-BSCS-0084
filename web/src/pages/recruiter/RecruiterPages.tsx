@@ -565,7 +565,17 @@ export function RecruiterJobApplications() {
       ) : (
         <Card title="Applications">
           <SimpleTable
-            columns={["Candidate", "Email", "Applied", "Match", "Band", "Best fit", "Reasons", "Actions"]}
+            columns={[
+              "Candidate",
+              "Email",
+              "Applied",
+              "Match",
+              "Band",
+              "Best fit",
+              "CV",
+              "Reasons",
+              "Actions",
+            ]}
             rows={
               apps.length
                 ? apps.map((app) => [
@@ -575,6 +585,13 @@ export function RecruiterJobApplications() {
                     app.match_score !== null && app.match_score !== undefined ? `${Math.round(app.match_score)}%` : "Not scored",
                     app.match_level || "-",
                     app.best_fit ? <span className="pill">Best fit</span> : "-",
+                    app.cv_file_url ? (
+                      <a href={app.cv_file_url} target="_blank" rel="noreferrer">
+                        Open CV
+                      </a>
+                    ) : (
+                      "No CV"
+                    ),
                     <div key={`${app.id}-reason`} style={{ display: "grid", gap: 4 }}>
                       <small>Matched: {(app.matched_skills || []).join(", ") || "-"}</small>
                       <small>Missing: {(app.missing_skills || []).join(", ") || "-"}</small>
