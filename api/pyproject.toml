@@ -1,0 +1,6 @@
+[project]
+name = "sp23-bscs-0084-api"
+version = "0.1.0"
+
+[project.scripts]
+app = "app.main:app"
