@@ -1,4 +1,4 @@
-# api\app\main.py
+# api/app/main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -30,3 +30,8 @@ def create_app() -> FastAPI:
 
 
 app = create_app()
+
+
+@app.get("/")
+def root():
+    return {"status": "ok", "message": "HireMatch API running on Vercel"}
