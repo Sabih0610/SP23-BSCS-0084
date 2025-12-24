@@ -1,38 +1,30 @@
-# Python
-__pycache__/
-*.py[cod]
-*.pyo
-*.pyd
-.Python
-env/
-venv/
-.venv/
-api/.venv/
-*.egg-info/
+# Node
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
 dist/
 build/
 
-# Node
-web/node_modules/
-node_modules/
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-package-lock.json
-pnpm-lock.yaml
 
-# IDEs and editors
+# Editors and OS
 .vscode/
 .idea/
-*.sublime-workspace
-
-# OS files
 .DS_Store
 Thumbs.db
 
-# Environment files
-.env
-.env.*
+# TypeScript
+*.tsbuildinfo
 
-# Logs
-*.log
+# Supabase
+supabase/.temp/

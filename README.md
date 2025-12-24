@@ -1,108 +1,54 @@
-<<<<<<< Updated upstream
-# HireMatch Blueprint
+# AI Recruitment System (Vite + React)
 
-Scaffolded monorepo for HireMatch using FastAPI (Python) for the API and React + Vite for the frontend.
+A single-page app for multi-role recruitment workflows (candidate, recruiter, admin) built with Vite, React, TypeScript, Tailwind, and shadcn-ui. Supabase handles auth and data; routing is client-side via React Router.
 
-Quick overview
-- `api/` — FastAPI backend (routers for admin, recruiter, candidate). Contains DB schema and seed SQL in `api/db/`.
-- `web/` — Frontend built with Vite + React (TypeScript).
+## Tech stack
+- Vite + React + TypeScript
+- Tailwind CSS + shadcn-ui
+- Supabase (auth, Postgres)
+- @tanstack/react-query
 
-What I added for you
-- `.gitignore` — excludes virtualenvs and `node_modules` so dependency directories are not committed.
+## Getting started
+1) Install dependencies:
+```bash
+npm install
+```
+2) Copy env template and fill Supabase values:
+```bash
+cp .env.example .env.local
+# set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY
+```
+3) Run dev server:
+```bash
+npm run dev
+```
+4) Production build:
+```bash
+npm run build
+```
 
-Local setup (recommended)
+## Environment variables
+Required (local and Vercel):
+- `VITE_SUPABASE_URL` – your Supabase project URL
+- `VITE_SUPABASE_PUBLISHABLE_KEY` – your Supabase anon public key
 
-1) Backend (Windows / PowerShell)
+If either variable is missing, the app fails early during Supabase client creation.
 
-   - Create and activate a virtual environment:
+## Deploying to Vercel
+Configured via `vercel.json`:
+- Build command: `npm run build`
+- Output directory: `dist`
+- SPA routing: all paths rewrite to `/index.html` for client-side routes
+- Framework hint: `vite`
 
-# HireMatch — HR CV–JD Match Assistant
+Steps:
+1) Push the repo to GitHub/GitLab/Bitbucket.
+2) Import into Vercel; keep the detected Vite settings (or the values above).
+3) Add the two Supabase env vars for Production (and Preview if needed).
+4) Deploy — routes like `/dashboard/*` work via the SPA rewrite.
 
-React/Vite frontend + FastAPI backend + Supabase (Auth/Postgres/Storage) + Gemini AI for JD improvement and CV–JD matching.
-
-Overview
-- `web/` — React + Vite frontend with public landing, auth, and role dashboards.
-- `api/` — FastAPI backend with role-based routers and Gemini integration. DB schema & seed are in `api/db/`.
-
-Docs & diagram
-- Documentation files: `ProblemStatement.md`, `UseCases.md`, `TestPlan.md`, `AI-log.md`, `ReleaseRoadmap.md`, `UI-Sketch-and-Vision.md`.
-- Diagram: `uml.png`.
-
-Prerequisites
-- Node 18+ and npm
-- Python 3.11+ (Windows: `py` launcher available)
-- Supabase project (URL, anon key, service key). Optional: JWT secret.
-- Gemini API key (for AI features)
-
-Local setup
-
-1) Frontend (web)
-
-   ```powershell
-   Set-Location 'F:\hr\web'
-   npm install
-   npm run dev            # defaults to http://localhost:5173
-   # Production build
-   npm run build
-   ```
-
-   Env: set `VITE_API_URL` (FastAPI base), `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` in `.env` or your shell. The code defaults to `http://127.0.0.1:8000` for local API.
-
-2) Backend (api)
-
-   ```powershell
-   Set-Location 'F:\hr\api'
-   python -m venv .venv
-   .\.venv\Scripts\Activate.ps1
-   pip install -r requirements.txt
-   copy .env.example .env  # fill with your secrets
-   uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
-   ```
-
-   Required `.env` keys: `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `SUPABASE_ANON_KEY`, `GEMINI_API_KEY`. Optional: `SUPABASE_JWT_SECRET`, `APP_ENV=local` for relaxed checks.
-
-Database schema & seed
-- SQL scripts: `api/db/schema.sql` and `api/db/seed.sql`. Apply to your Supabase project or Postgres instance:
-
-  ```powershell
-  psql "$SUPABASE_DB_URL" -f api/db/schema.sql
-  psql "$SUPABASE_DB_URL" -f api/db/seed.sql
-  ```
-
-Example API calls
-- List jobs (public):
-
-  ```bash
-  curl http://127.0.0.1:8000/jobs
-  ```
-
-- Candidate match check (requires Supabase auth token):
-
-  ```bash
-  curl -X POST http://127.0.0.1:8000/candidate/match-check \
-    -H "Authorization: Bearer <supabase_jwt>" \
-    -H "Content-Type: application/json" \
-    -d '{"jd_text":"React frontend role...", "cv_id":null}'
-  ```
-
-Notes
-- The `api/requirements.txt` lists Python dependencies. Use a virtual environment to avoid committing site-packages.
-- `.gitignore` excludes `api/.venv/` and `web/node_modules/` to keep the repository small.
-- If you previously pushed dependency folders and want to remove them from git history to reduce remote size, I can help (this rewrites history and requires a force-push).
-- For production, store secrets in CI or environment settings — do not commit them.
-
-Files of interest
-- `api/db/schema.sql` — DB schema
-- `api/db/seed.sql` — initial seed data
-- `api/app/main.py` — FastAPI app entrypoint
-- `web/src` — frontend source code
-
-Tests & notes
-- Example checks performed locally (2025-12-08): `npm run build` (web) and `py -m compileall app` (api) — both can be run locally; functional tests require Supabase + Gemini credentials as described in `TestPlan.md`.
-- Local dev can bypass strict role checks with `disable_role_checks_local=True` in settings.
-- CV uploads are stored in a Supabase storage bucket named `cvs` (created on-demand in local dev).
-
-Next steps
-- I can add/update an `MIT` `LICENSE` (or another license you prefer) and improve README examples of env variables. I can also purge large files from history if you want — this is optional and destructive to history (requires force-push).
-
----
+## Available scripts
+- `npm run dev` – start dev server
+- `npm run build` – production build
+- `npm run preview` – preview the production build
+- `npm run lint` – lint the project
