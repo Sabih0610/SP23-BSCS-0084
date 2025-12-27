@@ -13,6 +13,7 @@ def create_app() -> FastAPI:
         version="0.1.0",
         description="Role-based API for recruiters, candidates, and admins.",
     )
+    # Allow frontend on Vercel (and local) to call the API without CORS issues.
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
@@ -20,6 +21,16 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    @app.get("/", tags=["meta"])
+    def root() -> dict:
+        """Simple root endpoint so the platform returns JSON instead of a 404 page."""
+        return {"status": "ok", "service": "HireMatch API"}
+
+    @app.get("/health", tags=["meta"])
+    def health() -> dict:
+        """Basic health probe for uptime checks."""
+        return {"status": "healthy"}
 
     app.include_router(public.router)
     app.include_router(candidate.router)
