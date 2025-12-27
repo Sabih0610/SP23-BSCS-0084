@@ -1,54 +1,65 @@
-# AI Recruitment System (Vite + React)
+# HireMatch - HR CV-JD Match Assistant
 
-A single-page app for multi-role recruitment workflows (candidate, recruiter, admin) built with Vite, React, TypeScript, Tailwind, and shadcn-ui. Supabase handles auth and data; routing is client-side via React Router.
+Monorepo with a FastAPI backend (Supabase auth/DB/storage + Gemini for matching) and a Vite/React frontend. Docs live at the repo root (`ProblemStatement.md`, `UseCases.md`, `TestPlan.md`, etc.).
 
-## Tech stack
-- Vite + React + TypeScript
-- Tailwind CSS + shadcn-ui
-- Supabase (auth, Postgres)
-- @tanstack/react-query
+## Stack
+- Backend: FastAPI, Supabase (auth, Postgres, storage), Google Gemini, PyJWT
+- Frontend: Vite + React + TypeScript, Tailwind CSS
 
-## Getting started
-1) Install dependencies:
-```bash
+## Repository layout
+- `api/` – FastAPI app with routers for public, candidate, recruiter, admin, and notifications. SQL schema/seed in `api/db/`.
+- `web/` – Vite + React frontend. Global styles in `web/src/index.css`; Tailwind config in `web/tailwind.config.cjs`.
+- `*.md` – product docs and roadmap.
+
+## Prerequisites
+- Node.js 18+ and npm
+- Python 3.11+
+- Supabase project (URL, anon key, service key; optional JWT secret)
+- Gemini API key (for AI matching/explanations)
+
+## Backend (api) – local run
+```powershell
+Set-Location F:\hr\api
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+copy .env.example .env   # fill Supabase + Gemini values
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+Key environment variables (`api/.env.example`):
+- `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `SUPABASE_ANON_KEY`, `SUPABASE_JWT_SECRET` (optional)
+- `GEMINI_API_KEY`
+- `APP_ENV=local`, `DISABLE_ROLE_CHECKS_LOCAL=true` (dev bypass)
+
+Local auth shortcuts: with `APP_ENV=local`, you can skip JWT and send `X-Debug-Role: recruiter|candidate|admin` to simulate roles. Service/anon clients are built in `app/dependencies.py`; schema helpers live in `app/`.
+
+## Frontend (web) – local run
+```powershell
+Set-Location F:\hr\web
 npm install
+npm run dev        # http://localhost:5173
 ```
-2) Copy env template and fill Supabase values:
-```bash
-cp .env.example .env.local
-# set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY
+Vite env (`web/.env.local`):
+- `VITE_API_URL` (FastAPI base, defaults to http://127.0.0.1:8000 if unset)
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+
+Useful scripts:
+- `npm run build` – production build to `web/dist`
+- `npm run preview` – serve the production build locally
+
+## Database
+Apply `api/db/schema.sql` then `api/db/seed.sql` to your Supabase Postgres instance:
+```powershell
+psql "$SUPABASE_DB_URL" -f api/db/schema.sql
+psql "$SUPABASE_DB_URL" -f api/db/seed.sql
 ```
-3) Run dev server:
-```bash
-npm run dev
-```
-4) Production build:
-```bash
-npm run build
-```
 
-## Environment variables
-Required (local and Vercel):
-- `VITE_SUPABASE_URL` – your Supabase project URL
-- `VITE_SUPABASE_PUBLISHABLE_KEY` – your Supabase anon public key
+## Checks
+- Frontend: `npm run build`
+- Backend: `py -m compileall app` (from `api/` with venv active)
 
-If either variable is missing, the app fails early during Supabase client creation.
-
-## Deploying to Vercel
-Configured via `vercel.json`:
-- Build command: `npm run build`
-- Output directory: `dist`
-- SPA routing: all paths rewrite to `/index.html` for client-side routes
-- Framework hint: `vite`
-
-Steps:
-1) Push the repo to GitHub/GitLab/Bitbucket.
-2) Import into Vercel; keep the detected Vite settings (or the values above).
-3) Add the two Supabase env vars for Production (and Preview if needed).
-4) Deploy — routes like `/dashboard/*` work via the SPA rewrite.
-
-## Available scripts
-- `npm run dev` – start dev server
-- `npm run build` – production build
-- `npm run preview` – preview the production build
-- `npm run lint` – lint the project
+## Notes
+- `.env`/`.env.local` are ignored; only `api/.env.example` is committed.
+- CORS is open for local dev (`allow_origins=["*"]`); tighten for production.
+- Supabase RLS/role expectations should mirror the app’s routers (admin/recruiter/candidate).
